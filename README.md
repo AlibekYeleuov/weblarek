@@ -109,7 +109,7 @@ IProduct {
 }
 
 IBuyer {
-    payment: TPayment; - способ оплаты
+    payment: TPayment | null; - способ оплаты
     email: string; - email покупателя
     phone: string; - номер телефона покупателя
     address: string; - адрес доставки
