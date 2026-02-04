@@ -98,3 +98,72 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
+##### Данные 
+IProduct {
+    id: string; - id товара
+    description: string; - описание товара
+    image: string; - ссылка на изображение товара
+    title: string; - название товара
+    category: string; - категория товара
+    price: number | null; - цена товара. null в случае если товар недоступен
+}
+
+IBuyer {
+    payment: TPayment; - способ оплаты
+    email: string; - email покупателя
+    phone: string; - номер телефона покупателя
+    address: string; - адрес доставки
+}
+
+##### Модели данных
+
+class Catalog {
+        поля класса:
+    items: IProduct[]; - все товары в каталоге
+    preview: IProduct | null; - карточка выбранного товара
+        методы класса:
+    setItems(items: IProduct[]): void {} ; - сохраняет массив товаров
+    getItems(): IProduct[] {} ; - возвращает массив всех товаров
+    getItemById(id: string): IProduct | undefined {} ; - возвращает товар по id
+    setPreview(item: IProduct): void {} ; - сохраняет выбраный товар
+    getPreview(): IProduct | null {}; - возвращает выбраный товар
+}
+
+class Basket {
+        поля класса:
+    items: IProduct[]; - товары добавленные в корзину
+        методы:
+    getItems(): IProduct[] {} ; - возвращает массив товаров в корзине
+    addItem(item: IProduct): void {} ; - добавляет товар в корзину
+    removeItem(item: IProduct): void {} ; - удаляет товар из корзины
+    clear(): void {} ; - очищает корзину
+    getTotalPrice(): number {} ; - возвращает стоимость всех товаров в корзине
+    getCount(): number {} ; - возвращает количество товаров в корзине
+    hasItem(id: string): boolean {} ; - проверяет есть ли товар в корзине по id
+}
+
+class Buyer {
+        поля класса:
+    payment: TPayment | null; - выбраный способ оплаты
+    email: string; - email покупателя
+    phone: string; - номер телефона покупателя
+    address: string; - адрес доставки
+        методы:
+    setData(data: Partial<IBuyer>): void {} ; - сохраняет введённые данные покупателя
+    getData(): IBuyer {} ; - возвращает данные покупателя
+    clear(): void {} ; - очищает данные покупателя
+    validate(): Partial<Record<keyof IBuyer, string>> {} ; - выполняет валидацию данных покупателя, возвращает объект с описанием ошибки
+}
+
+##### Слой коммуникации
+
+class APICompose {
+        поля класса:
+    api: IApi; - сохранённый API клиент, для отправки запроса
+        методы класса:
+    constructor(api: IApi) { - принимает и сохраняет API клиент
+        api: IApi;
+    }
+    getProducts(): Promise<IProduct[]> {} ; - выполняет запрос и возвращает массив товаров
+    postOrder(order: IOrder): Promise<IOrderResult> {} ; - отпраляет на сервер данные сделанного заказа
+}
