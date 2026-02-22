@@ -3,17 +3,26 @@
 Стек: HTML, SCSS, TS, Vite
 
 Структура проекта:
-- src/ — исходные файлы проекта
-- src/components/ — папка с JS компонентами
-- src/components/base/ — папка с базовым кодом
+- src/ -
+ исходные файлы проекта
+- src/components/ -
+ папка с JS компонентами
+- src/components/base/ -
+ папка с базовым кодом
 
 Важные файлы:
-- index.html — HTML-файл главной страницы
-- src/types/index.ts — файл с типами
-- src/main.ts — точка входа приложения
-- src/scss/styles.scss — корневой файл стилей
-- src/utils/constants.ts — файл с константами
-- src/utils/utils.ts — файл с утилитами
+- index.html -
+ HTML-файл главной страницы
+- src/types/index.ts -
+ файл с типами
+- src/main.ts -
+ точка входа приложения
+- src/scss/styles.scss -
+ корневой файл стилей
+- src/utils/constants.ts -
+ файл с константами
+- src/utils/utils.ts -
+ файл с утилитами
 
 ## Установка и запуск
 Для установки и запуска проекта необходимо выполнить команды
@@ -41,7 +50,8 @@ npm run build
 yarn build
 ```
 # Интернет-магазин «Web-Larёk»
-«Web-Larёk» — это интернет-магазин с товарами для веб-разработчиков, где пользователи могут просматривать товары, добавлять их в корзину и оформлять заказы. Сайт предоставляет удобный интерфейс с модальными окнами для просмотра деталей товаров, управления корзиной и выбора способа оплаты, обеспечивая полный цикл покупки с отправкой заказов на сервер.
+«Web-Larёk» -
+ это интернет-магазин с товарами для веб-разработчиков, где пользователи могут просматривать товары, добавлять их в корзину и оформлять заказы. Сайт предоставляет удобный интерфейс с модальными окнами для просмотра деталей товаров, управления корзиной и выбора способа оплаты, обеспечивая полный цикл покупки с отправкой заказов на сервер.
 
 ## Архитектура приложения
 
@@ -99,6 +109,9 @@ Presenter - презентер содержит основную логику п
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
 ##### Данные 
+
+TPayment = 'card' | 'cash'; - тип способа оплаты
+
 IProduct {
     id: string; - id товара
     description: string; - описание товара
@@ -113,6 +126,16 @@ IBuyer {
     email: string; - email покупателя
     phone: string; - номер телефона покупателя
     address: string; - адрес доставки
+}
+
+IOrder {
+    items: string[]; - массив выбранных товаров
+    total: number; - итоговая сумма
+}
+
+IOrderResults {
+    id: string; - id товара
+    total: number; - итоговая сумма
 }
 
 ##### Модели данных
@@ -167,3 +190,113 @@ class APICompose {
     getProducts(): Promise<IProduct[]> {} ; - выполняет запрос и возвращает массив товаров
     postOrder(order: IOrder): Promise<IOrderResult> {} ; - отпраляет на сервер данные сделанного заказа
 }
+
+##### Слой View
+
+class Card {
+        поля класса:
+    id: string; - id товара
+    titleElement: HTMLElement; - название товара
+    imageElement: HTMLImageElement; - изображение товара
+    priceElement: HTMLElement; - цена товара
+    categoryElement: HTMLElement; - категория товара
+        методы класса:
+    set title(value: string) - установка названия товара
+    set image(value: string) - установка изображения товара
+    set price(value: number | null) - установка цены товара
+    set category(value: string) - установка категории товара
+}
+
+class CardCatalog extends Card - наследует класс Card, карточка товара в каталоге
+        дополнение:
+    генерирует событие card:select при клике
+
+class CardPreview extends Card - наследует класс Card, карточка товара в модальном окне
+        дополнение:
+    кнопка "В корзину" - генерирует событие card:add
+
+class CardBasket extends Card - наследует класс Card, карточка товара в корзине
+        дополнение:
+    кнопка удаления - генерирует событие basket:item-remove
+    отображение порядкового номера
+
+class BasketView {
+        поля класса:
+    listElement: HTMLElement; - ul, в который будет помещена карточка для отображения
+    priceElement: HTMLElement; - отображение итоговой суммы
+    orderButton: HTMLButtonElement; - кнопка оформления заказа
+        методы:
+    render({ items: HTMLElement[], total: number }) - отображение товаров в корзине
+    set total(value: number) - итоговая сумма товаров
+    генерация события order:open, по клику на "Оформить"
+}
+
+class Galery {
+        методы класса:
+    set items({ value: HTMLElement[] }) - отображает список карточек
+}
+
+class Form {
+        поля класса:
+    submitButton - кнопка отправки формы
+    errorElement - сообщение об ошибке
+        методы:
+    set errors(value: string) - установка сообщения об ошибке
+    set valid(value: boolean) - управляет состоянием кнопки отправки формы
+}
+
+class OrderForm extends Form - наследует класс Form, отвечает за способ оплаты и адрес
+        дополнение:
+    генерирует события order:change и order:submit
+
+class ContactsForm extends Form - наследует класс Form, отвечает за email и телефон
+        дополнение:
+    генерирует события contacts:change и contacts:submit
+
+class Sucsess {
+        поля класса:
+    description - выводит итоговую сумму заказа
+    closeButton - кнопка "За новыми покупками!"
+        методы класса:
+    set total(value: number) - итоговая сумма товаров
+}
+
+сlass Modal {
+        методы класса:
+    render({ content: HTMLElement }) - выводит шаблон открываемого окна
+    open() - открытие модального окна
+    close() - закрытие модального окна
+}
+
+class Header {
+        методы класса:
+    set counter(value: number) - отвечает за отображение количества товаров в корзине
+}
+
+##### Презентер
+презентер реализован в main.ts
+
+обработчики:
+catalog:changed
+catalog:preview-changed
+basket:changed
+buyer:changed
+card:add
+card:select
+basket:item-remove
+order:open
+order:submit
+contacts:submit
+
+##### События 
+
+card:select - клик по карточке в каталоге, payload { id: string }
+contacts:change - пользователь меняет поля email или phone
+contacts:submit - отправка формы контактов
+payment:select - выбор оплаты
+order:change - изменение адреса
+order:submit - отправка формы заказа
+catalog:changed - изменился массив товаров
+catalog:preview-changed - выбран товар для превью
+basket:changed - изменилось содержимое корзины
+buyer:changed - изменились данные покупателя
