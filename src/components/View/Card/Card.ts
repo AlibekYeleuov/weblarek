@@ -4,14 +4,10 @@ import { ensureElement } from '../../../utils/utils';
 export abstract class Card<T> extends Component<T> {
     protected titleElement: HTMLElement;
     protected priceElement: HTMLElement;
-    protected _id: string = '';
     constructor(container: HTMLElement) {
         super(container);
         this.titleElement = ensureElement('.card__title', this.container);
         this.priceElement = ensureElement('.card__price', this.container);
-    }
-    set id(value: string) {
-        this._id = value;
     }
     set title(value: string) {
         this.titleElement.textContent = value;

@@ -1,11 +1,9 @@
 import { ensureElement } from '../../../utils/utils';
 import { categoryMap } from '../../../utils/constants';
-import { IEvents } from '../../base/Events';
 import { Card } from './Card';
 import { CDN_URL } from '../../../utils/constants';
 
 interface ICardPreview {
-    id: string;
     title: string;
     description: string;
     image: string;
@@ -19,7 +17,7 @@ export class CardPreview extends Card<ICardPreview> {
     protected categoryElement: HTMLElement;
     protected buttonElement: HTMLButtonElement;
     protected imageElement: HTMLImageElement;
-    constructor(container: HTMLElement, protected events: IEvents) {
+    constructor(container: HTMLElement, private onAction: () => void) {
         super(container);
         this.descriptionElement = ensureElement<HTMLElement>(
         '.card__text',
@@ -34,7 +32,7 @@ export class CardPreview extends Card<ICardPreview> {
         this.container
         );
         this.buttonElement.addEventListener('click', () => {
-        this.events.emit('card:toggle', { id: this._id });
+            this.onAction();
         });
         this.imageElement = ensureElement<HTMLImageElement>(
         '.card__image',
@@ -56,6 +54,6 @@ export class CardPreview extends Card<ICardPreview> {
         this.buttonElement.textContent = value;
     }
     set image(value: string) {
-            this.setImage(this.imageElement, `${CDN_URL}${value}`, this.titleElement.textContent ?? '');
+        this.setImage(this.imageElement, `${CDN_URL}${value}`, this.titleElement.textContent ?? '');
     }
 }

@@ -195,30 +195,41 @@ class APICompose {
 
 class Card {
         поля класса:
-    id: string; - id товара
     titleElement: HTMLElement; - название товара
-    imageElement: HTMLImageElement; - изображение товара
     priceElement: HTMLElement; - цена товара
-    categoryElement: HTMLElement; - категория товара
         методы класса:
     set title(value: string) - установка названия товара
-    set image(value: string) - установка изображения товара
     set price(value: number | null) - установка цены товара
-    set category(value: string) - установка категории товара
 }
 
 class CardCatalog extends Card - наследует класс Card, карточка товара в каталоге
-        дополнение:
-    генерирует событие card:select при клике
+        поля класса:
+    categoryElement: HTMLElement - категория товара
+    imageElement: HTMLImageElement - картинка товара
+        методы:
+    set category(value: keyof typeof categoryMap) - установка категории товара
+    set image(value: string) - установка картинки товара
 
 class CardPreview extends Card - наследует класс Card, карточка товара в модальном окне
-        дополнение:
-    кнопка "В корзину" - генерирует событие card:add
+        поля класса:
+    descriptionElement: HTMLElement; - описание товара
+    categoryElement: HTMLElement; - категория товара
+    buttonElement: HTMLButtonElement; - кнопка добавления товара в корзину(или удаления из корзины)
+    imageElement: HTMLImageElement; - картинка товара
+        методы:
+    set description(value: string) - установка описания товара
+    set category(value: keyof typeof categoryMap) - установка категории товара
+    set price(value: number | null) - отвечает за активность кнопки с ценой "бесценно"
+    set buttonText(value: string) - установка кнопки товара (в зависимости был ли он добален в корзину)
+    set image(value: string) - установка картинки товара
 
 class CardBasket extends Card - наследует класс Card, карточка товара в корзине
-        дополнение:
-    кнопка удаления - генерирует событие basket:item-remove
-    отображение порядкового номера
+        поля класса:
+    indexElement: HTMLElement; - индекс товара
+    deleteButton: HTMLButtonElement; - кнопка удаления товара из корзины
+        методы:
+    set index(value: number) - установка индекса товара
+    set price(value: number | null) - стоимость одного товара в корзине
 
 class BasketView {
         поля класса:
@@ -226,9 +237,8 @@ class BasketView {
     priceElement: HTMLElement; - отображение итоговой суммы
     orderButton: HTMLButtonElement; - кнопка оформления заказа
         методы:
-    render({ items: HTMLElement[], total: number }) - отображение товаров в корзине
+    set items(elements: HTMLElement[]) - отображение товаров в корзине
     set total(value: number) - итоговая сумма товаров
-    генерация события order:open, по клику на "Оформить"
 }
 
 class Galery {
@@ -238,37 +248,53 @@ class Galery {
 
 class Form {
         поля класса:
-    submitButton - кнопка отправки формы
-    errorElement - сообщение об ошибке
+    submitButton: HTMLButtonElement - кнопка отправки формы
+    errorElement: HTMLElement - сообщение об ошибке
         методы:
     set errors(value: string) - установка сообщения об ошибке
     set valid(value: boolean) - управляет состоянием кнопки отправки формы
 }
 
 class OrderForm extends Form - наследует класс Form, отвечает за способ оплаты и адрес
-        дополнение:
-    генерирует события order:change и order:submit
+        поля класса:
+    cardButton: HTMLButtonElement - кнопки выбора типа оплаты
+    cashButton: HTMLButtonElement - кнопки выбора типа оплаты
+    addressInput: HTMLInputElement - поле ввода адреса
+        методы:
+    set payment(value: TPayment | null) - установка типа оплаты
+    set adress(value: string) - установка адреса доставки
 
 class ContactsForm extends Form - наследует класс Form, отвечает за email и телефон
-        дополнение:
-    генерирует события contacts:change и contacts:submit
+        поля класса:
+    emailInput: HTMLInputElement - поле ввода email
+    phoneInput: HTMLInputElement - поле ввода телефона
+        методы:
+    set email(value: string) - электронная почта покупателя
+    set phone(value: string) - телефонный номер покупателя
 
 class Sucsess {
         поля класса:
-    description - выводит итоговую сумму заказа
-    closeButton - кнопка "За новыми покупками!"
+    description: HTMLElement - выводит итоговую сумму заказа
+    closeButton: HTMLButtonElement - кнопка "За новыми покупками!"
         методы класса:
     set total(value: number) - итоговая сумма товаров
 }
 
 сlass Modal {
+        поля класса:
+    closeButton: HTMLButtonElement - кнопка закрытия модального окна
+    content: HTMLElement - контент окна - из шаблона
         методы класса:
+    set contentElement(value: HTMLElement) - подставляет контент из шаблона
     render({ content: HTMLElement }) - выводит шаблон открываемого окна
     open() - открытие модального окна
     close() - закрытие модального окна
 }
 
 class Header {
+        поля класса:
+    counterElement: HTMLElement - счётчик товаров в корзине
+    basketButton: HTMLButtonElement - кнопка открытия корзины
         методы класса:
     set counter(value: number) - отвечает за отображение количества товаров в корзине
 }
@@ -278,25 +304,36 @@ class Header {
 
 обработчики:
 catalog:changed
-catalog:preview-changed
-basket:changed
-buyer:changed
-card:add
 card:select
+catalog:preview-changed
+preview:action
+basket:open
+basket:changed
 basket:item-remove
 order:open
+payment:select
+order:change
 order:submit
+contacts:change
 contacts:submit
+success:close
+modal:close
 
 ##### События 
 
 card:select - клик по карточке в каталоге, payload { id: string }
+preview:action — клик по кнопке в превью (добавить или удалить из корзины)
 contacts:change - пользователь меняет поля email или phone
 contacts:submit - отправка формы контактов
 payment:select - выбор оплаты
+order:open — кнопка “оформить” в корзине
 order:change - изменение адреса
 order:submit - отправка формы заказа
 catalog:changed - изменился массив товаров
 catalog:preview-changed - выбран товар для превью
+basket:open — клик по иконке корзины в хедере
 basket:changed - изменилось содержимое корзины
+basket:item-remove — удаление товара из корзины, payload { id: string }
 buyer:changed - изменились данные покупателя
+success:close — кнопка “За новыми покупками!” - закрывает модальное окно
+modal:close — кнопка крестик модалки

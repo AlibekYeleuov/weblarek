@@ -25,18 +25,9 @@ import { Success } from './components/View/Form/Sucsess';
 
 import { IProduct } from './types';
 import { TPayment } from './types';
+import { IOrder } from './types';
 
-function cloneTemplate<T extends HTMLElement>(id: string): T {
-    const template = document.querySelector(`#${id}`) as HTMLTemplateElement | null;
-    if (!template) {
-        throw new Error(`Template #${id} not found`);
-    }
-    const node = template.content.firstElementChild?.cloneNode(true);
-    if (!node) {
-        throw new Error(`Template #${id} is empty`);
-    }
-    return node as T;
-}
+import { cloneTemplate } from './utils/utils';
 
 const events = new EventEmitter();
 
@@ -59,9 +50,16 @@ const modalContainer = document.querySelector('#modal-container') as HTMLElement
 if (!modalContainer) throw new Error('Modal container #modal-container not found');
 const modal = new Modal(events, modalContainer);
 
-const basketView = new BasketView(events, cloneTemplate<HTMLElement>('basket'));
-const orderForm = new OrderForm(cloneTemplate<HTMLFormElement>('order'), events);
-const contactsForm = new ContactsForm(cloneTemplate<HTMLFormElement>('contacts'), events);
+const basketView = new BasketView(events, cloneTemplate<HTMLElement>('#basket'));
+basketView.render({ items: [], total: 0 });
+const orderForm = new OrderForm(cloneTemplate<HTMLFormElement>('#order'), events);
+const contactsForm = new ContactsForm(cloneTemplate<HTMLFormElement>('#contacts'), events);
+const previewElement = cloneTemplate<HTMLElement>('#card-preview');
+const preview = new CardPreview(previewElement, () => {
+  events.emit('preview:action');
+});
+const successElement = cloneTemplate<HTMLElement>('#success');
+const success = new Success(events, successElement);
 
 apiCompose
     .getProducts()
@@ -79,18 +77,27 @@ events.on('catalog:changed', () => {
     const items = catalog.getItems();
 
     const cards = items.map((item: IProduct) => {
-        const element = cloneTemplate<HTMLElement>('card-catalog');
-        const card = new CardCatalog(element, events);
+        const element = cloneTemplate<HTMLElement>('#card-catalog');
+        const card = new CardCatalog(element, () => {
+            events.emit('card:select', { id: item.id });
+        });
         return card.render(item);
     });
 
     gallery.render({ items: cards });
 });
 
-events.on('card:toggle', ({ id }: { id: string }) => {
-    const item = catalog.getItemById(id) || basket.getItems().find((i) => i.id === id);
+events.on('preview:action', () => {
+    const item = catalog.getPreview();
     if (!item) return;
-    basket.hasItem(id) ? basket.removeItem(item) : basket.addItem(item);
+
+    if(item.price === null) return;
+
+    if (basket.hasItem(item.id)) {
+        basket.removeItem(item);
+    } else {
+        basket.addItem(item);
+    }
     modal.close();
 });
 
@@ -98,49 +105,45 @@ events.on('catalog:preview-changed', () => {
     const item = catalog.getPreview();
     if (!item) return;
 
-    const element = cloneTemplate<HTMLElement>('card-preview');
-    const preview = new CardPreview(element, events);
+    const inBasket = basket.hasItem(item.id);
 
-    const isInBasket = basket.hasItem(item.id);
+    const buttonText = 
+        item.price === null 
+        ? 'Недоступно' : inBasket 
+        ? 'Удалить из корзины' : 'Купить';
 
-    preview.render({
-        ...item,
-        buttonText: isInBasket ? 'Удалить из корзины' : 'Купить'
+    modal.render({
+        content: preview.render({
+            ...item,
+            buttonText
+        })
     });
 
-    modal.render({ content: preview.render(item) });
     modal.open();
 });
 
-function renderBasket() {
+events.on('basket:open', () => {
+  modal.render({ content: basketView.render() });
+  modal.open();
+});
+
+events.on('basket:changed', () => {
+    header.render({ counter: basket.getCount() });
     const items = basket.getItems();
 
     const cards = items.map((item, index) => {
-        const element = cloneTemplate<HTMLElement>('card-basket');
-        const card = new CardBasket(element, events);
+        const element = cloneTemplate<HTMLElement>('#card-basket');
+        const card = new CardBasket(element, () => {
+        events.emit('basket:item-remove', { id: item.id });
+        });
 
         return card.render({
         index: index + 1,
         title: item.title,
         price: item.price,
-        id: item.id,
-        } as any);
+        });
     });
-    basketView.render({
-        items: cards,
-        total: basket.getTotalPrice(),
-    } as any);
-}
-
-events.on('basket:open', () => {
-    renderBasket();
-    modal.render({ content: basketView.render() });
-    modal.open();
-});
-
-events.on('basket:changed', () => {
-    renderBasket();
-    header.render({ counter: basket.getCount() });
+    basketView.render({ items: cards, total: basket.getTotalPrice() });
 });
 
 events.on('basket:item-remove', ({ id }: { id: string }) => {
@@ -188,8 +191,8 @@ events.on('payment:select', ({ payment }: { payment: TPayment }) => {
     buyer.setData({ payment });
 });
 
-events.on('order:change', ({ field, value }: { field: 'address'; value: string }) => {
-    buyer.setData({ [field]: value } as any);
+events.on('order:change', ({ value }: { field: 'address'; value: string }) => {
+    buyer.setData({ address: value });
 });
 
 events.on('order:submit', () => {
@@ -198,7 +201,12 @@ events.on('order:submit', () => {
 });
 
 events.on('contacts:change', ({ field, value }: { field: 'email' | 'phone'; value: string }) => {
-    buyer.setData({ [field]: value } as any);
+    if (field === 'email') {
+        buyer.setData({ email: value});
+    }
+    if (field === 'phone') {
+        buyer.setData({ phone: value});
+    }
 });
 
 events.on('success:close', () => {
@@ -206,25 +214,20 @@ events.on('success:close', () => {
 });
 
 events.on('contacts:submit', () => {
-    const buyerData = buyer.getData();
-    const items = basket.getItems().map((i) => i.id);
     const total = basket.getTotalPrice();
 
-    const order = {
-        ...buyerData,
-        items,
+    const order: IOrder = {
+        ...buyer.getData(),
+        items: basket.getItems().map((i) => i.id),
         total
     };
 
     apiCompose
-        .postOrder(order as any)
+        .postOrder(order)
         .then(() => {
             basket.clear();
             buyer.clear();
-
-            const successEl = cloneTemplate<HTMLElement>('success');
-            const success = new Success(events, successEl);
-
+            
             modal.render({ content: success.render({ total }) });
             modal.open();
         })
